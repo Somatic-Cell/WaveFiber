@@ -213,7 +213,8 @@ void average_cpu(const hostFvec &scattering_h, hostFvec &scattering_final_h, con
   std::cout<<"ratiophi "<<ratiophi<<" ratiotheta "<<ratiotheta<<" thetaofinal "<<thetaofinal<<
     " thetaonum "<<thetaonum<<" phiofinal "<<phiofinal<<" phionum "<<phionum<<std::endl;
 
-  float scattering[thetaonum*phiofinal] = {0.f};
+  // float scattering[thetaonum*phiofinal] = {0.f};
+  std::vector<float> scattering(thetaonum * phiofinal, 0.0f);
   for (int i=0; i<thetaonum; ++i){
     for (int j=0; j<phiofinal; ++j){
       for (int k = 0; k < ratiophi; ++k){

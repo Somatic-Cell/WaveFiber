@@ -14,7 +14,8 @@ typedef thrust::complex<float> comThr;
 typedef thrust::complex<double> comThrD;
 const comThr cunit(0.0,1.0);
 float c0 = 299792458;
-float mu0 = 4e-7 * M_PI;
+constexpr float PI_F = 3.14159265358979323846f;
+float mu0 = 4e-7f * PI_F;
 float eps0 = 8.8541878e-12;
 float Z0 = sqrt(mu0/eps0);
 
@@ -381,17 +382,16 @@ comThr rp(float theta, comThr n0, comThr nt){
   return (q0-qt)/(q0+qt);
 }
 
-struct add6 : public thrust::binary_function<float6, float6, float6>
-{
-  __host__ __device__
-  float6 operator()(float6 a, float6 b) {
-    float6 result;
-    thrust::get<0>(result) = thrust::get<0>(a) + thrust::get<0>(b);
-    thrust::get<1>(result) = thrust::get<1>(a) + thrust::get<1>(b);
-    thrust::get<2>(result) = thrust::get<2>(a) + thrust::get<2>(b);
-    thrust::get<3>(result) = thrust::get<3>(a) + thrust::get<3>(b);
-    thrust::get<4>(result) = thrust::get<4>(a) + thrust::get<4>(b);
-    thrust::get<5>(result) = thrust::get<5>(a) + thrust::get<5>(b);
-    return result;
-  }
+struct add6 {
+    __host__ __device__
+    float6 operator()(const float6& a, const float6& b) const {
+        float6 c;
+        c.x = a.x + b.x;
+        c.y = a.y + b.y;
+        c.z = a.z + b.z;
+        c.u = a.u + b.u;
+        c.v = a.v + b.v;
+        c.w = a.w + b.w;
+        return c;
+    }
 };

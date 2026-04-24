@@ -1,0 +1,159 @@
+--- a/fibersim/treePO.cu
++++ b/fibersim/treePO.cu
+@@ -14,6 +14,73 @@
+ #include "../util/geometry.h"
+ #include "../util/tree.h"
+ 
++static void write_float_vector_binary(const std::string &filename, const hostFvec &values) {
++  std::ofstream out(filename, std::ios::out | std::ios::binary);
++  if (!out) {
++    std::cerr << "Failed to open " << filename << " for writing." << std::endl;
++    std::exit(EXIT_FAILURE);
++  }
++  if (!values.empty()) {
++    out.write(reinterpret_cast<const char *>(&values[0]), sizeof(float) * values.size());
++  }
++}
++
++static void write_float2_vector_binary(const std::string &filename, const hostf2vec &values) {
++  std::ofstream out(filename, std::ios::out | std::ios::binary);
++  if (!out) {
++    std::cerr << "Failed to open " << filename << " for writing." << std::endl;
++    std::exit(EXIT_FAILURE);
++  }
++  if (!values.empty()) {
++    out.write(reinterpret_cast<const char *>(&values[0]), sizeof(float2) * values.size());
++  }
++}
++
++static void write_complex_dump_metadata(const std::string &filename,
++                                        int fiberindex,
++                                        int lambdaindex,
++                                        float wavelength_nm,
++                                        int thetaiindex,
++                                        float thetai,
++                                        int phiiindex,
++                                        float phii,
++                                        char mode,
++                                        int max_depth,
++                                        int startindex,
++                                        int endindex,
++                                        int thetaonum,
++                                        int phionum,
++                                        int obnum,
++                                        float thetastartoffset,
++                                        float Z0_value) {
++  std::ofstream meta(filename);
++  if (!meta) {
++    std::cerr << "Failed to open " << filename << " for writing." << std::endl;
++    std::exit(EXIT_FAILURE);
++  }
++
++  meta << std::setprecision(10);
++  meta << "format_version 1\n";
++  meta << "complex_storage interleaved_float32_real_imag\n";
++  meta << "direction_storage interleaved_float32_xyz\n";
++  meta << "grid_layout theta_major_phi_minor\n";
++  meta << "fiberindex " << fiberindex << "\n";
++  meta << "lambdaindex " << lambdaindex << "\n";
++  meta << "wavelength_nm " << wavelength_nm << "\n";
++  meta << "thetaiindex " << thetaiindex << "\n";
++  meta << "thetai_rad " << thetai << "\n";
++  meta << "phiiindex " << phiiindex << "\n";
++  meta << "phii_rad " << phii << "\n";
++  meta << "mode " << mode << "\n";
++  meta << "max_depth " << max_depth << "\n";
++  meta << "startindex " << startindex << "\n";
++  meta << "endindex " << endindex << "\n";
++  meta << "thetaonum " << thetaonum << "\n";
++  meta << "phionum " << phionum << "\n";
++  meta << "obnum " << obnum << "\n";
++  meta << "thetastartoffset_rad " << thetastartoffset << "\n";
++  meta << "Z0 " << Z0_value << "\n";
++}
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+ // Main entry point.
+@@ -37,9 +104,7 @@
+   " phiiindexstart "<<phiiindexstart<<std::endl;
+ 
+   std::string outputdir = "output";
+-  char dir_array[outputdir.length()];
+-  strcpy(dir_array, outputdir.c_str());
+-  mkdir(dir_array, 0777);
++  mkdir(outputdir.c_str(), 0777);
+ 
+   float periodvec[4]  = { 20 * 1e-6, 50 * 1e-6, 400 * 1e-6, 400 * 1e-6 };
+   float radius1vec[4] = { 20 * 1e-6, 40 * 1e-6,  40 * 1e-6,  40 * 1e-6 };
+@@ -949,13 +1014,69 @@
+                                            Z0);
+               } // check even or odd when compute scattering function
+ 
+-              // std::cout<<"copy scattering"<<std::endl;
++              // copy scattering intensity for backwards-compatible output
+               thrust::copy(scattering.begin(), scattering.end(), scattering_h.begin());
+-              // std::cout<<"write out"<<std::endl;
++
++              // also dump the underlying complex fields so they can be analyzed offline
++              const bool use_d1 = ((max_depth-i)%2==1);
++              if (use_d1){
++                thrust::copy(Ex_d1.begin(), Ex_d1.begin() + obnum, Ex_final.begin());
++                thrust::copy(Ey_d1.begin(), Ey_d1.begin() + obnum, Ey_final.begin());
++                thrust::copy(Ez_d1.begin(), Ez_d1.begin() + obnum, Ez_final.begin());
++                thrust::copy(Hx_d1.begin(), Hx_d1.begin() + obnum, Hx_final.begin());
++                thrust::copy(Hy_d1.begin(), Hy_d1.begin() + obnum, Hy_final.begin());
++                thrust::copy(Hz_d1.begin(), Hz_d1.begin() + obnum, Hz_final.begin());
++              }else{
++                thrust::copy(Ex_d0.begin(), Ex_d0.begin() + obnum, Ex_final.begin());
++                thrust::copy(Ey_d0.begin(), Ey_d0.begin() + obnum, Ey_final.begin());
++                thrust::copy(Ez_d0.begin(), Ez_d0.begin() + obnum, Ez_final.begin());
++                thrust::copy(Hx_d0.begin(), Hx_d0.begin() + obnum, Hx_final.begin());
++                thrust::copy(Hy_d0.begin(), Hy_d0.begin() + obnum, Hy_final.begin());
++                thrust::copy(Hz_d0.begin(), Hz_d0.begin() + obnum, Hz_final.begin());
++              }
++
++              // legacy intensity file, kept unchanged
+               std::string filename = outputdir + "/fiber_"+std::to_string(fiberindex)+"_lambda"+std::to_string(lambdaindex)+"_T"+mode+"_depth"+std::to_string(max_depth)+".binary";
+               std::ofstream out(filename, std::ios::out|std::ios::binary);
+               out.write((char *) &scattering_h[0], sizeof(float)*obnum);
+ 
++              // new per-run prefix with incident-angle indices included
++              float wavelength_nm = wavelength_min + (wavelength_max-wavelength_min)/(float)lambdanum*lambdaindex;
++              std::string prefix = outputdir + "/fiber_" + std::to_string(fiberindex)
++                + "_lambda" + std::to_string(lambdaindex)
++                + "_ti" + std::to_string(thetaiindex)
++                + "_pi" + std::to_string(phiiindex)
++                + "_T" + std::string(1, mode)
++                + "_depth" + std::to_string(max_depth)
++                + "_s" + std::to_string(startindex)
++                + "_e" + std::to_string(endindex);
++
++              write_float_vector_binary(prefix + "_intensity.bin", scattering_h);
++              write_float_vector_binary(prefix + "_dir.bin", dirvec);
++              write_float2_vector_binary(prefix + "_Ex.bin", Ex_final);
++              write_float2_vector_binary(prefix + "_Ey.bin", Ey_final);
++              write_float2_vector_binary(prefix + "_Ez.bin", Ez_final);
++              write_float2_vector_binary(prefix + "_Hx.bin", Hx_final);
++              write_float2_vector_binary(prefix + "_Hy.bin", Hy_final);
++              write_float2_vector_binary(prefix + "_Hz.bin", Hz_final);
++              write_complex_dump_metadata(prefix + "_meta.txt",
++                                          fiberindex,
++                                          lambdaindex,
++                                          wavelength_nm,
++                                          thetaiindex,
++                                          thetai,
++                                          phiiindex,
++                                          phii,
++                                          mode,
++                                          max_depth,
++                                          startindex,
++                                          endindex,
++                                          thetaonum,
++                                          phionum,
++                                          obnum,
++                                          thetastartoffset,
++                                          Z0);
++
+             } // top level of the tree
+ 
+           } // loop through all levels

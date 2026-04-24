@@ -2,51 +2,10 @@
 #include <iostream>
 #include <fstream>
 #include <sys/stat.h>
-
-#ifdef _WIN32
-#include <winsock2.h>
-#include <windows.h>
-
-inline int gettimeofday(timeval* tp, void* tzp) {
-    FILETIME ft;
-    unsigned __int64 tmpres = 0;
-    static const unsigned __int64 EPOCH = 116444736000000000ULL;
-
-    if (tp) {
-        GetSystemTimeAsFileTime(&ft);
-        tmpres |= ((unsigned __int64)ft.dwHighDateTime) << 32;
-        tmpres |= ft.dwLowDateTime;
-        tmpres -= EPOCH;
-        tp->tv_sec  = (long)(tmpres / 10000000ULL);
-        tp->tv_usec = (long)((tmpres % 10000000ULL) / 10ULL);
-    }
-    return 0;
-}
-#else
 #include <sys/time.h>
-#endif
-
 #include <cufft.h>
 #include <cufftXt.h>
-// #include <bits/stdc++.h>
-#include <vector>
-#include <string>
-#include <sstream>
-#include <iomanip>
-#include <algorithm>
-#include <numeric>
-#include <cmath>
-#include <complex>
-#include <map>
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
-#include <tuple>
-#include <utility>
-#include <limits>
-#include <random>
-#include <chrono>
-#include <filesystem>
+#include <bits/stdc++.h>
 
 #include "../util/util.h"
 #include "../util/tangentplane.h"
@@ -145,7 +104,7 @@ int main(int argc, char **argv) {
   " phiiindexstart "<<phiiindexstart<<std::endl;
 
   std::string outputdir = "output";
-  std::filesystem::create_directories(outputdir);
+  mkdir(outputdir.c_str(), 0777);
 
   float periodvec[4]  = { 20 * 1e-6, 50 * 1e-6, 400 * 1e-6, 400 * 1e-6 };
   float radius1vec[4] = { 20 * 1e-6, 40 * 1e-6,  40 * 1e-6,  40 * 1e-6 };
@@ -445,9 +404,9 @@ int main(int argc, char **argv) {
  
   deviceC6vec currentvec_dev(sourcenum);
   std::cout<<"max_depth "<<max_depth<<std::endl;
-  std::vector<int> thetaonumvec(max_depth + 1);
-  std::vector<int> phionumvec(max_depth + 1);
-  std::vector<int> anglenumvec(max_depth + 1);
+  int thetaonumvec[max_depth+1];
+  int phionumvec[max_depth+1];
+  int anglenumvec[max_depth+1];
   int anglesum_nonleaf = obnum;
   thetaonumvec[0] = thetaonum;
   phionumvec[0] = phionum;
