@@ -1,0 +1,120 @@
+diff --git a/fibersim/treePO.cu b/fibersim/treePO.cu
+--- a/fibersim/treePO.cu
++++ b/fibersim/treePO.cu
+@@ -1,13 +1,61 @@
+ #include <stdio.h>
+ #include <iostream>
+ #include <fstream>
++#include <cstdlib>
++#include <vector>
++#include <string>
++#include <sstream>
++#include <iomanip>
++#include <algorithm>
++#include <numeric>
++#include <cmath>
++#include <complex>
++#include <map>
++#include <set>
++#include <unordered_map>
++#include <unordered_set>
++#include <tuple>
++#include <utility>
++#include <limits>
++#include <random>
++#include <chrono>
++#include <filesystem>
++
+ #ifdef _WIN32
++#ifndef NOMINMAX
++#define NOMINMAX
++#endif
++#include <winsock2.h>
+ #include <windows.h>
+-struct timeval { long tv_sec; long tv_usec; };
+-inline int gettimeofday(struct timeval* tp, void* tzp) { ... }
++inline int gettimeofday(timeval* tp, void*) {
++    FILETIME ft;
++    unsigned __int64 tmpres = 0;
++    static const unsigned __int64 EPOCH = 116444736000000000ULL;
++    if (tp) {
++        GetSystemTimeAsFileTime(&ft);
++        tmpres |= ((unsigned __int64)ft.dwHighDateTime) << 32;
++        tmpres |= ft.dwLowDateTime;
++        tmpres -= EPOCH;
++        tp->tv_sec  = (long)(tmpres / 10000000ULL);
++        tp->tv_usec = (long)((tmpres % 10000000ULL) / 10ULL);
++    }
++    return 0;
++}
+ #else
++#include <sys/stat.h>
+ #include <sys/time.h>
+ #endif
+ #include <cufft.h>
+ #include <cufftXt.h>
+-#include <bits/stdc++.h>
+@@
+-  mkdir(outputdir.c_str(), 0777);
++  std::filesystem::create_directories(outputdir);
+@@
+-  int thetaonumvec[max_depth+1];
+-  int phionumvec[max_depth+1];
+-  int anglenumvec[max_depth+1];
++  std::vector<int> thetaonumvec(max_depth + 1);
++  std::vector<int> phionumvec(max_depth + 1);
++  std::vector<int> anglenumvec(max_depth + 1);
+
+diff --git a/util/util.h b/util/util.h
+--- a/util/util.h
++++ b/util/util.h
+@@
+ #include "helper_cuda.h"
++#ifndef M_PI
++#define M_PI 3.14159265358979323846
++#endif
+@@
+-float mu0 = 4e-7 * M_PI;
++float mu0 = 4e-7f * static_cast<float>(M_PI);
+@@
+-struct add6 : public thrust::binary_function<float6, float6, float6>
++struct add6
+ {
+   __host__ __device__
+   float6 operator()(const float6& a, const float6& b) const {
+     float6 c;
+-    c.x = a.x + b.x;
+-    c.y = a.y + b.y;
+-    c.z = a.z + b.z;
+-    c.u = a.u + b.u;
+-    c.v = a.v + b.v;
+-    c.w = a.w + b.w;
++    thrust::get<0>(c) = thrust::get<0>(a) + thrust::get<0>(b);
++    thrust::get<1>(c) = thrust::get<1>(a) + thrust::get<1>(b);
++    thrust::get<2>(c) = thrust::get<2>(a) + thrust::get<2>(b);
++    thrust::get<3>(c) = thrust::get<3>(a) + thrust::get<3>(b);
++    thrust::get<4>(c) = thrust::get<4>(a) + thrust::get<4>(b);
++    thrust::get<5>(c) = thrust::get<5>(a) + thrust::get<5>(b);
+     return c;
+   }
+ };
+
+diff --git a/util/helper_cuda.h b/util/helper_cuda.h
+--- a/util/helper_cuda.h
++++ b/util/helper_cuda.h
+@@
++#if CUDART_VERSION < 13000
+     case CUFFT_INCOMPLETE_PARAMETER_LIST:
+       return "CUFFT_INCOMPLETE_PARAMETER_LIST";
+     case CUFFT_PARSE_ERROR:
+       return "CUFFT_PARSE_ERROR";
+     case CUFFT_LICENSE_ERROR:
+       return "CUFFT_LICENSE_ERROR";
++#endif
+
+diff --git a/util/fields.h b/util/fields.h
+--- a/util/fields.h
++++ b/util/fields.h
+@@
+-  float scattering[thetaonum*phiofinal] = {0.f};
++  std::vector<float> scattering(thetaonum * phiofinal, 0.0f);

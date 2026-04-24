@@ -1,0 +1,35 @@
+lambda 0 0 thetaindexstart 90 phiiindexstart 0
+read in surface height
+reading geometry file: mesh/fiber3.binary
+datanum 75520000
+finish reading file
+surfaceheight[0] 3.98778e-05 surfaceheight[1] 3.98781e-05
+max_nodes 585
+sourcenum 24000000
+set_sourcepoint
+deviceFvec
+create points
+allocate points
+create normals
+allocate normals
+create areas
+allocate areas
+Find/set the device.GPU Device 0: "Ampere" with compute capability 8.6
+
+GPU device NVIDIA GeForce RTX 3070 has compute capabilities (SM 8.6)
+Launching CDP kernel to build the octree
+NUM_WARPS_PER_BLOCK 8
+after building tree
+nonleafnodes 73
+max_depth 3
+level 0 thetaonum 7200 phionum 1440 anglenumvec[0] 10368000
+level 1 thetaonum 3864 phionum 809 anglenumvec[i] 3125976 maxnum 18755856
+level 2 thetaonum 1960 phionum 421 anglenumvec[i] 825160 maxnum 26405120
+level 3 thetaonum 1002 phionum 223 anglenumvec[i] 223446 maxnum 32176224
+anglesum_nonleaf 14319136
+maxnum 32176224
+plan_theta_ inembed[0] 10368000 onembed[0] 10368000 num[0] 3864 istride 1440 idist 1 ostride 1 odist 3864 batch 1440
+plan_theta_ inembed[0] 3125976 onembed[0] 3125976 num[0] 1960 istride 809 idist 1 ostride 1 odist 1960 batch 809
+plan_theta_ inembed[0] 825160 onembed[0] 825160 num[0] 1002 istride 421 idist 1 ostride 1 odist 1002 batch 421
+num 32176224 sourcenum 24000000 maxnum 32176224
+total time used: 31.6414

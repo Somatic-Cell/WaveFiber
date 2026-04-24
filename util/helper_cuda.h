@@ -141,10 +141,14 @@ static const char *_cudaGetErrorEnum(cufftResult error) {
 #if CUDART_VERSION < 13000
     case CUFFT_INCOMPLETE_PARAMETER_LIST:
         return "CUFFT_INCOMPLETE_PARAMETER_LIST";
+#if CUDART_VERSION < 13000
     case CUFFT_PARSE_ERROR:
         return "CUFFT_PARSE_ERROR";
+#endif
+#if CUDART_VERSION < 13000
     case CUFFT_LICENSE_ERROR:
         return "CUFFT_LICENSE_ERROR";
+#endif
 #endif
 
     case CUFFT_INVALID_DEVICE:

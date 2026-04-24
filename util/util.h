@@ -10,6 +10,10 @@
 #include "helper_cuda.h"
 
 
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 typedef thrust::complex<float> comThr;
 typedef thrust::complex<double> comThrD;
 const comThr cunit(0.0,1.0);
@@ -383,15 +387,15 @@ comThr rp(float theta, comThr n0, comThr nt){
 }
 
 struct add6 {
-    __host__ __device__
-    float6 operator()(const float6& a, const float6& b) const {
-        float6 c;
-        c.x = a.x + b.x;
-        c.y = a.y + b.y;
-        c.z = a.z + b.z;
-        c.u = a.u + b.u;
-        c.v = a.v + b.v;
-        c.w = a.w + b.w;
-        return c;
-    }
+  __host__ __device__
+  float6 operator()(const float6& a, const float6& b) const {
+    float6 c;
+    thrust::get<0>(c) = thrust::get<0>(a) + thrust::get<0>(b);
+    thrust::get<1>(c) = thrust::get<1>(a) + thrust::get<1>(b);
+    thrust::get<2>(c) = thrust::get<2>(a) + thrust::get<2>(b);
+    thrust::get<3>(c) = thrust::get<3>(a) + thrust::get<3>(b);
+    thrust::get<4>(c) = thrust::get<4>(a) + thrust::get<4>(b);
+    thrust::get<5>(c) = thrust::get<5>(a) + thrust::get<5>(b);
+    return c;
+  }
 };

@@ -1,17 +1,36 @@
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
-#include <sys/stat.h>
+#include <cstdlib>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
+#include <numeric>
+#include <cmath>
+#include <complex>
+#include <map>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
+#include <tuple>
+#include <utility>
+#include <limits>
+#include <random>
+#include <chrono>
+#include <filesystem>
 
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <winsock2.h>
 #include <windows.h>
-
-inline int gettimeofday(timeval* tp, void* tzp) {
+inline int gettimeofday(timeval* tp, void*) {
     FILETIME ft;
     unsigned __int64 tmpres = 0;
     static const unsigned __int64 EPOCH = 116444736000000000ULL;
-
     if (tp) {
         GetSystemTimeAsFileTime(&ft);
         tmpres |= ((unsigned __int64)ft.dwHighDateTime) << 32;
@@ -23,12 +42,12 @@ inline int gettimeofday(timeval* tp, void* tzp) {
     return 0;
 }
 #else
+#include <sys/stat.h>
 #include <sys/time.h>
 #endif
 
 #include <cufft.h>
 #include <cufftXt.h>
-// #include <bits/stdc++.h>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -185,6 +204,7 @@ int main(int argc, char **argv) {
   // read in rough surface file
   std::cout<<"read in surface height"<<std::endl;
   std::string filename = "mesh/fiber"+std::to_string(fiberindex)+".binary";
+  std::cout << "reading geometry file: " << filename << std::endl;
   std::ifstream myfile(filename, std::ios::in|std::ios::binary);
   int datanum = numel*numelvert*2;
   std::cout<<"datanum "<<datanum<<std::endl;
